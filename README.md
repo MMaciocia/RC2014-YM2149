@@ -1,6 +1,8 @@
 # RC2014-YM2149
 My patched PTX Player that will read a PT3 file and play it, press a key to exit.....
 
+I have included assembled binary. Requires that YM2149 at D0 hex.
+
 
 To assemble, you need to find SJASM, (runs under Windows, command line).
 
