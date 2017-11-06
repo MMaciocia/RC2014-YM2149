@@ -1668,7 +1668,25 @@ outer DEC BC                  ;Decrements BC
 	pop bc
   
   RET                     ;Return from call to this subroutine
-quit	ld	c,0			  ;quit to CP/M command prompt
+ymreg	equ	#d8
+ymdat	equ	#d0
+
+quit						; a key was pressed, don't care which, just exit.
+							; set volume of YM2149 to off before exiting
+		ld	a,8				; the channel a volume register			
+		out	(ymreg),a 		; select
+		ld	a,0				; and volume zero, repeat for channel B and C.
+		out (ymdat),a 
+		ld	a,9				; channel B volume register
+		out (ymreg),a
+		ld	a,0
+		out	(ymdat),a 
+		ld 	a,#0A 			; as per data sheet descript. Ch C volume register
+		out	(ymreg),a
+		ld	a,0
+		out (ymdat),a 		; should be all quiet now
+		
+		ld	c,0			  ;quit to CP/M command prompt
 		jp	bdos
 
 MDLADDR EQU $
