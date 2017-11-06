@@ -1609,7 +1609,7 @@ VAR0END	EQU VT_+16 ;INIT zeroes from VARS to VAR0END-1
 VARSEND EQU $
 
 
-TX 		push hl
+TX 		push hl				; MM calls to CP/M kill HL and we need it
 		push af
 ;txbusy  in a,($80)          ; read serial status
 ;        bit 1,a             ; check status bit 1
@@ -1617,11 +1617,12 @@ TX 		push hl
 ;        pop af
 ;        out ($81), a        ; transmit the character
 ;        ret
-		push	bc
-		push	de
-		ld	c,2			;call BDOS with console out
-		ld	e,a 		;e must contain character
-		call	bdos	;go do it
+; MM added print routine for output via CP/M BDOS.
+		push	bc			; MM just in case the caller needs them intact
+		push	de			; MM going to use C and E for CP/M call.
+		ld	c,2			; MM call BDOS with console out
+		ld	e,a 		; MM e must contain character
+		call	bdos	; MM go do it
 		pop	de
 		pop	bc
 		pop	af
@@ -1640,12 +1641,12 @@ startupstr            DB "Megabanghra 3000.",10,13,0
 loopstr DB "*",10,13,0
 endstr DB "the end.",10,13,0
 
-pause
+pause						; MM put in a test for character at terminal - RAW I/O called
   push bc
   push de
   push af
 
-  LD BC, $1500            ;Loads BC with hex 1000
+  LD BC, $1500            ;Loads BC with hex 1500
   ; outer: LD DE, $1000            ;Loads DE with hex 1000
   ; inner: DEC DE                  ;Decrements DE
   ; LD A, D                 ;Copies D into A
@@ -1657,39 +1658,41 @@ outer DEC BC                  ;Decrements BC
   JP NZ, outer            ;Jumps back to Outer: label if A is not zero
 
 
-	ld	c,6				;going to check for a console input
-	ld	e,#ff
+	ld	c,6				; MM going to check for a console input
+	ld	e,#ff			; MM tell CP/M we want a character
 	call	bdos
-	cp	a,0
-	jr	nz,quit
+	cp	a,0				; MM 'a' will be zero if nothing there.
+	jr	nz,quit			; MM quit if there is a character
   
 	pop af
 	pop de
 	pop bc
   
   RET                     ;Return from call to this subroutine
-ymreg	equ	#d8
-ymdat	equ	#d0
+  
+ymreg	equ	#d8				; MM entry to YM register array
+ymdat	equ	#d0				; MM and data port for when we need to write to selected register.
 
-quit						; a key was pressed, don't care which, just exit.
-							; set volume of YM2149 to off before exiting
-		ld	a,8				; the channel a volume register			
-		out	(ymreg),a 		; select
-		ld	a,0				; and volume zero, repeat for channel B and C.
+quit						; MM a key was pressed, don't care which, just exit.
+							; MM set volume of YM2149 to off before exiting
+		ld	a,8				; MM the channel a volume register			
+		out	(ymreg),a 		; MM select
+		ld	a,0				; MM and volume zero, repeat for channel B and C.
 		out (ymdat),a 
-		ld	a,9				; channel B volume register
+		ld	a,9				; MM channel B volume register
 		out (ymreg),a
 		ld	a,0
 		out	(ymdat),a 
-		ld 	a,#0A 			; as per data sheet descript. Ch C volume register
+		ld 	a,#0A 			; MM as per data sheet descript. Ch C volume register is 0A not 10.
 		out	(ymreg),a
 		ld	a,0
-		out (ymdat),a 		; should be all quiet now
+		out (ymdat),a 		; MM should be all quiet now
 		
-		ld	c,0			  ;quit to CP/M command prompt
+		ld	c,0			  	; MM quit to CP/M command prompt
 		jp	bdos
 
 MDLADDR EQU $
+	; MM dont need any includes as we read via CP/M now.
 	;incbin tunes/through_yeovil.pt3
 	;incbin tunes/nq_-_synchronization_(2015).pt3
 	;incbin tunes/nq_-_louboutin_(2016).pt3
